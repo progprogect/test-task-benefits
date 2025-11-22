@@ -2,10 +2,13 @@
 FastAPI application entry point.
 """
 import os
-from fastapi import FastAPI
+import mimetypes
+from pathlib import Path
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
+from starlette.responses import Response as StarletteResponse
 
 from app.config import settings
 from app.database import engine, Base
@@ -35,13 +38,43 @@ app.add_middleware(
 # IMPORTANT: Mount static files BEFORE API routes to ensure proper MIME types
 # StaticFiles mount has priority over regular routes
 if settings.ENVIRONMENT == "production":
-    static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
-    assets_dir = os.path.join(static_dir, "assets")
+    static_dir = Path(os.path.dirname(__file__)).parent / "static"
+    assets_dir = static_dir / "assets"
     
-    if os.path.exists(static_dir) and os.path.exists(assets_dir):
-        # Mount assets directory for JS, CSS, and other static files
-        # html=False ensures CSS/JS files are served with correct MIME types, not text/html
-        app.mount("/assets", StaticFiles(directory=assets_dir, html=False), name="assets")
+    if static_dir.exists() and assets_dir.exists():
+        # Custom handler for assets with explicit MIME types
+        @app.get("/assets/{file_path:path}")
+        async def serve_asset(file_path: str):
+            """Serve static assets with proper MIME types."""
+            file_full_path = assets_dir / file_path
+            
+            # Security: prevent directory traversal
+            try:
+                file_full_path.resolve().relative_to(assets_dir.resolve())
+            except ValueError:
+                return Response(content="Not found", status_code=404)
+            
+            if not file_full_path.exists() or not file_full_path.is_file():
+                return Response(content="Not found", status_code=404)
+            
+            # Determine MIME type
+            mime_type, _ = mimetypes.guess_type(str(file_full_path))
+            if not mime_type:
+                # Fallback for common file types
+                if file_path.endswith('.css'):
+                    mime_type = 'text/css'
+                elif file_path.endswith('.js'):
+                    mime_type = 'application/javascript'
+                elif file_path.endswith('.json'):
+                    mime_type = 'application/json'
+                else:
+                    mime_type = 'application/octet-stream'
+            
+            return FileResponse(
+                str(file_full_path),
+                media_type=mime_type,
+                headers={"Cache-Control": "public, max-age=31536000"}
+            )
 
 # Include API routes
 app.include_router(reimbursement.router, prefix=settings.API_V1_PREFIX, tags=["reimbursement"])
