@@ -46,9 +46,12 @@ async def health_check():
 # Serve static files (React build) - only in production
 if settings.ENVIRONMENT == "production":
     static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+    assets_dir = os.path.join(static_dir, "assets")
+    
     if os.path.exists(static_dir):
-        # Mount static files directory (includes assets, index.html, etc.)
-        app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+        # Mount assets directory for JS, CSS, and other static files
+        if os.path.exists(assets_dir):
+            app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
         
         # Serve index.html for all non-API, non-asset routes (SPA routing)
         @app.get("/{full_path:path}")
