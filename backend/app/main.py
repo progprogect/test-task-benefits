@@ -2,10 +2,10 @@
 FastAPI application entry point.
 """
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from app.config import settings
 from app.database import engine, Base
@@ -54,8 +54,9 @@ if settings.ENVIRONMENT == "production":
             app.mount("/assets", StaticFiles(directory=assets_dir, html=False), name="assets")
         
         # Serve index.html for all non-API, non-asset routes (SPA routing)
+        # Note: This route is registered AFTER the mount, so /assets requests are handled by StaticFiles first
         @app.get("/{full_path:path}")
-        async def serve_frontend(full_path: str, request: Request):
+        async def serve_frontend(full_path: str):
             """Serve React app for all non-API routes."""
             # Don't serve API routes or asset routes
             if full_path.startswith("api") or full_path.startswith("assets"):
