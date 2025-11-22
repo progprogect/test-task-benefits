@@ -31,15 +31,19 @@ async def extract_invoice_data(image_url: str) -> Dict[str, Any]:
     """
     try:
         client = get_openai_client()
-        response = client.chat.completions.create(
-            model="gpt-4o",  # Updated model name - supports vision
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": """Extract the following information from this invoice/receipt image and return it as JSON:
+        
+        # Use gpt-4o for vision (supports both text and images)
+        # Alternative: "gpt-4-turbo" or "gpt-4-vision-preview" if gpt-4o doesn't work
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": """Extract the following information from this invoice/receipt image and return it as JSON:
 {
     "vendor_name": "name of the merchant/vendor",
     "purchase_date": "YYYY-MM-DD format or null if not found",
@@ -66,8 +70,48 @@ Be as accurate as possible. If a field is not found, use null."""
                     ]
                 }
             ],
-            max_tokens=2000,
-        )
+                max_tokens=2000,
+            )
+        except Exception as model_error:
+            # Fallback to gpt-4-turbo if gpt-4o fails
+            print(f"Error with gpt-4o, trying gpt-4-turbo: {str(model_error)}")
+            response = client.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": """Extract the following information from this invoice/receipt image and return it as JSON:
+{
+    "vendor_name": "name of the merchant/vendor",
+    "purchase_date": "YYYY-MM-DD format or null if not found",
+    "items": [
+        {
+            "description": "item description",
+            "amount": "amount as number or null"
+        }
+    ],
+    "total_amount": "total amount as number",
+    "currency": "currency code (USD, EUR, etc.)",
+    "invoice_number": "invoice/receipt number or null if not found",
+    "extracted_text": "full text content extracted from the invoice"
+}
+
+Be as accurate as possible. If a field is not found, use null."""
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": image_url
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens=2000,
+            )
         
         # Extract JSON from response
         content = response.choices[0].message.content
