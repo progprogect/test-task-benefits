@@ -10,11 +10,15 @@ from app.config import settings
 
 
 # Configure Cloudinary
-cloudinary.config(
-    cloud_name=settings.CLOUDINARY_CLOUD_NAME,
-    api_key=settings.CLOUDINARY_API_KEY,
-    api_secret=settings.CLOUDINARY_API_SECRET,
-)
+# Prefer CLOUDINARY_URL if provided, otherwise use individual variables
+if settings.CLOUDINARY_URL:
+    cloudinary.config(settings.CLOUDINARY_URL)
+else:
+    cloudinary.config(
+        cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+        api_key=settings.CLOUDINARY_API_KEY,
+        api_secret=settings.CLOUDINARY_API_SECRET,
+    )
 
 
 async def upload_file(file: UploadFile) -> tuple[str, str]:

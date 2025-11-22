@@ -18,6 +18,9 @@ class Settings:
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     
     # Cloudinary
+    # Support both CLOUDINARY_URL (cloudinary://api_key:api_secret@cloud_name) 
+    # and individual variables for flexibility
+    CLOUDINARY_URL: str = os.getenv("CLOUDINARY_URL", "")
     CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME", "")
     CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")
     CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
