@@ -49,21 +49,25 @@ if settings.ENVIRONMENT == "production":
     assets_dir = os.path.join(static_dir, "assets")
     
     if os.path.exists(static_dir):
-        # Mount assets directory for JS, CSS, and other static files
+        # Mount assets directory for JS, CSS, and other static files with proper MIME types
         if os.path.exists(assets_dir):
-            app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+            app.mount("/assets", StaticFiles(directory=assets_dir, html=False), name="assets")
         
         # Serve index.html for all non-API, non-asset routes (SPA routing)
         @app.get("/{full_path:path}")
-        async def serve_frontend(full_path: str):
+        async def serve_frontend(full_path: str, request: Request):
             """Serve React app for all non-API routes."""
             # Don't serve API routes or asset routes
             if full_path.startswith("api") or full_path.startswith("assets"):
-                return {"error": "Not found"}
+                return Response(content="Not found", status_code=404)
             
             # Serve index.html for SPA routing
             index_path = os.path.join(static_dir, "index.html")
             if os.path.exists(index_path):
-                return FileResponse(index_path)
-            return {"error": "Not found"}
+                return FileResponse(
+                    index_path,
+                    media_type="text/html",
+                    headers={"Cache-Control": "no-cache"}
+                )
+            return Response(content="Not found", status_code=404)
 
