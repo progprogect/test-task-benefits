@@ -32,7 +32,7 @@ async def extract_invoice_data(image_url: str) -> Dict[str, Any]:
     try:
         client = get_openai_client()
         response = client.chat.completions.create(
-            model="gpt-4-vision-preview",
+            model="gpt-4o",  # Updated model name - supports vision
             messages=[
                 {
                     "role": "user",
@@ -82,12 +82,22 @@ Be as accurate as possible. If a field is not found, use null."""
         
         return invoice_data
         
+    except ValueError as e:
+        # API key not set
+        raise HTTPException(
+            status_code=500,
+            detail=f"OpenAI API configuration error: {str(e)}"
+        )
     except json.JSONDecodeError as e:
         raise HTTPException(
             status_code=500,
             detail=f"Failed to parse OCR response as JSON: {str(e)}"
         )
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"OCR extraction error: {str(e)}")
+        print(f"Traceback: {error_details}")
         raise HTTPException(
             status_code=500,
             detail=f"OCR extraction failed: {str(e)}"

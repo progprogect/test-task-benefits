@@ -211,9 +211,21 @@ async def submit_reimbursement(
             "remaining_balance": remaining_balance
         }
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (they already have proper status codes)
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to process reimbursement: {str(e)}")
+        # Log the full error for debugging
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error processing reimbursement: {str(e)}")
+        print(f"Traceback: {error_details}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to process reimbursement: {str(e)}"
+        )
 
 
 @router.get("/reimbursement/{request_id}", response_model=ReimbursementResponse)
