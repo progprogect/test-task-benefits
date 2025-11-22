@@ -293,6 +293,7 @@ async def get_reimbursement(request_id: UUID, db: Session = Depends(get_db)):
             "invoice_number": invoice.invoice_number,
             "extracted_text": invoice.extracted_text
         } if invoice else None,
-        "remaining_balance": remaining_balance
+        "remaining_balance": remaining_balance,  # Always in USD
+        "remaining_balance_currency": "USD"  # Explicitly indicate USD
     }
 
