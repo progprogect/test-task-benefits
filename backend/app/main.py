@@ -2,7 +2,7 @@
 FastAPI application entry point.
 """
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
@@ -11,8 +11,10 @@ from app.config import settings
 from app.database import engine, Base
 from app.api.routes import reimbursement, employees, categories, balances
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Create database tables (only in development - use migrations in production)
+# In production, tables should be created via Alembic migrations
+if settings.ENVIRONMENT == "development":
+    Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI app
 app = FastAPI(
