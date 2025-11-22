@@ -45,12 +45,16 @@ function ReimbursementResult({ result }) {
         <span>{result.employee_name} ({result.employee_employee_id})</span>
       </div>
 
-      {result.category_name && (
-        <div className="result-item">
-          <label>Category:</label>
-          <span>{result.category_name}</span>
-        </div>
-      )}
+      <div className="result-item">
+        <label>Category:</label>
+        <span>
+          {result.category_name || (
+            <span style={{ color: '#e67e22', fontStyle: 'italic' }}>
+              Not determined (pending review)
+            </span>
+          )}
+        </span>
+      </div>
 
       <div className="result-item">
         <label>Amount:</label>
