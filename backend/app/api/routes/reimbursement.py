@@ -101,7 +101,7 @@ async def submit_reimbursement(
         category_id = None
         status = RequestStatus.PENDING_REVIEW
         
-        if match_result.get("category_id") and match_result.get("confidence", 0) >= 0.6:
+        if match_result.get("category_id") and match_result.get("confidence", 0) >= 0.7:
             category_id = UUID(match_result["category_id"])
             request.category_id = category_id
             
