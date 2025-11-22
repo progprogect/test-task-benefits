@@ -47,7 +47,8 @@ class ReimbursementResponse(BaseModel):
     submission_timestamp: datetime
     rejection_reason: Optional[str] = None
     invoice: Optional[InvoiceData] = None
-    remaining_balance: Optional[Decimal] = None
+    remaining_balance: Optional[Decimal] = None  # Always in USD
+    remaining_balance_currency: str = "USD"  # Always USD
     
     class Config:
         from_attributes = True

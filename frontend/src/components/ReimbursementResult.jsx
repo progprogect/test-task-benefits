@@ -64,7 +64,7 @@ function ReimbursementResult({ result }) {
       {result.remaining_balance !== null && (
         <div className="result-item">
           <label>Remaining Balance:</label>
-          <span>{formatCurrency(result.remaining_balance, result.currency)}</span>
+          <span>{formatCurrency(result.remaining_balance, result.remaining_balance_currency || 'USD')}</span>
         </div>
       )}
 
