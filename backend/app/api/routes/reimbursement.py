@@ -138,8 +138,13 @@ async def submit_reimbursement(
                     )
                     db.add(balance)
                 
+                # Convert amount to USD before updating balance (all balances stored in USD)
+                from app.services.currency_service import convert_to_usd
+                amount_usd = await convert_to_usd(request.amount, request.currency)
+                
                 # Only update monthly_used - annual limit is checked by summing all months
-                balance.monthly_used += request.amount
+                # Store in USD for consistent comparison
+                balance.monthly_used += amount_usd
             else:
                 status = RequestStatus.REJECTED
                 request.rejection_reason = validation_result["reason"]

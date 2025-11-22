@@ -10,6 +10,7 @@ from sqlalchemy import and_
 
 from app.models.employee_benefit_balance import EmployeeBenefitBalance
 from app.models.benefit_category import BenefitCategory
+from app.services.currency_service import convert_to_usd
 
 
 async def validate_reimbursement(
@@ -42,11 +43,14 @@ async def validate_reimbursement(
                 "remaining_balance": None
             }
         
-        # Check transaction limit
-        if amount > category.max_transaction_amount:
+        # Convert amount to USD for comparison with limits (all limits are in USD)
+        amount_usd = await convert_to_usd(amount, currency)
+        
+        # Check transaction limit (compare in USD)
+        if amount_usd > category.max_transaction_amount:
             return {
                 "valid": False,
-                "reason": f"Amount {amount} exceeds maximum transaction limit of {category.max_transaction_amount}",
+                "reason": f"Amount {amount} {currency} (${amount_usd:.2f} USD) exceeds maximum transaction limit of ${category.max_transaction_amount} USD",
                 "remaining_balance": None
             }
         
@@ -78,12 +82,13 @@ async def validate_reimbursement(
             db.add(balance)
             db.flush()
         
-        # Check monthly limit
+        # Check monthly limit (compare in USD)
+        # Note: balance.monthly_used is stored in USD (converted when approved)
         monthly_remaining = category.monthly_limit - balance.monthly_used
-        if amount > monthly_remaining:
+        if amount_usd > monthly_remaining:
             return {
                 "valid": False,
-                "reason": f"Insufficient monthly balance. Remaining: {monthly_remaining}, Requested: {amount}",
+                "reason": f"Insufficient monthly balance. Remaining: ${monthly_remaining:.2f} USD, Requested: {amount} {currency} (${amount_usd:.2f} USD)",
                 "remaining_balance": monthly_remaining
             }
         
@@ -98,10 +103,10 @@ async def validate_reimbursement(
         
         total_annual_used = sum(b.monthly_used for b in annual_balances)
         annual_remaining = category.annual_limit - total_annual_used
-        if amount > annual_remaining:
+        if amount_usd > annual_remaining:
             return {
                 "valid": False,
-                "reason": f"Insufficient annual balance. Remaining: {annual_remaining}, Requested: {amount}",
+                "reason": f"Insufficient annual balance. Remaining: ${annual_remaining:.2f} USD, Requested: {amount} {currency} (${amount_usd:.2f} USD)",
                 "remaining_balance": annual_remaining
             }
         
