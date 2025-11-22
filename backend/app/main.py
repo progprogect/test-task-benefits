@@ -32,6 +32,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# IMPORTANT: Mount static files BEFORE API routes to ensure proper MIME types
+# StaticFiles mount has priority over regular routes
+if settings.ENVIRONMENT == "production":
+    static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+    assets_dir = os.path.join(static_dir, "assets")
+    
+    if os.path.exists(static_dir) and os.path.exists(assets_dir):
+        # Mount assets directory for JS, CSS, and other static files
+        # html=False ensures CSS/JS files are served with correct MIME types, not text/html
+        app.mount("/assets", StaticFiles(directory=assets_dir, html=False), name="assets")
+
 # Include API routes
 app.include_router(reimbursement.router, prefix=settings.API_V1_PREFIX, tags=["reimbursement"])
 app.include_router(employees.router, prefix=settings.API_V1_PREFIX, tags=["employees"])
@@ -45,22 +56,16 @@ async def health_check():
     return {"status": "healthy", "environment": settings.ENVIRONMENT}
 
 
-# Serve static files (React build) - only in production
+# Serve index.html for SPA routing (must be registered LAST to catch all non-API routes)
+# This route will NOT intercept /assets/* requests because mount has higher priority
 if settings.ENVIRONMENT == "production":
     static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
-    assets_dir = os.path.join(static_dir, "assets")
     
     if os.path.exists(static_dir):
-        # Mount assets directory for JS, CSS, and other static files with proper MIME types
-        if os.path.exists(assets_dir):
-            app.mount("/assets", StaticFiles(directory=assets_dir, html=False), name="assets")
-        
-        # Serve index.html for all non-API, non-asset routes (SPA routing)
-        # Note: This route is registered AFTER the mount, so /assets requests are handled by StaticFiles first
         @app.get("/{full_path:path}")
         async def serve_frontend(full_path: str):
             """Serve React app for all non-API routes."""
-            # Don't serve API routes or asset routes
+            # Additional safety check (though mount should handle /assets already)
             if full_path.startswith("api") or full_path.startswith("assets"):
                 return Response(content="Not found", status_code=404)
             
@@ -73,4 +78,3 @@ if settings.ENVIRONMENT == "production":
                     headers={"Cache-Control": "no-cache"}
                 )
             return Response(content="Not found", status_code=404)
-
