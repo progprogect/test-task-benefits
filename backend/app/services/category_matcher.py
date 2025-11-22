@@ -12,7 +12,11 @@ from app.models.benefit_category import BenefitCategory
 from app.models.category_keyword import CategoryKeyword
 
 
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+def get_openai_client():
+    """Get OpenAI client instance."""
+    if not settings.OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY is not set")
+    return OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 async def match_category(
@@ -86,6 +90,7 @@ Return JSON only:
 
 If confidence is below 0.6, set category_id to null."""
         
+        client = get_openai_client()
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[

@@ -9,7 +9,11 @@ from fastapi import HTTPException
 from app.config import settings
 
 
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+def get_openai_client():
+    """Get OpenAI client instance."""
+    if not settings.OPENAI_API_KEY:
+        raise ValueError("OPENAI_API_KEY is not set")
+    return OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 async def extract_invoice_data(image_url: str) -> Dict[str, Any]:
@@ -26,6 +30,7 @@ async def extract_invoice_data(image_url: str) -> Dict[str, Any]:
         HTTPException: If OCR fails
     """
     try:
+        client = get_openai_client()
         response = client.chat.completions.create(
             model="gpt-4-vision-preview",
             messages=[
