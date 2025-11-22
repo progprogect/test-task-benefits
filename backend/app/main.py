@@ -47,14 +47,18 @@ async def health_check():
 if settings.ENVIRONMENT == "production":
     static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
     if os.path.exists(static_dir):
-        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+        # Mount static files directory (includes assets, index.html, etc.)
+        app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
         
+        # Serve index.html for all non-API, non-asset routes (SPA routing)
         @app.get("/{full_path:path}")
         async def serve_frontend(full_path: str):
             """Serve React app for all non-API routes."""
-            # Don't serve API routes or static files
-            if full_path.startswith("api") or full_path.startswith("static"):
+            # Don't serve API routes or asset routes
+            if full_path.startswith("api") or full_path.startswith("assets"):
                 return {"error": "Not found"}
+            
+            # Serve index.html for SPA routing
             index_path = os.path.join(static_dir, "index.html")
             if os.path.exists(index_path):
                 return FileResponse(index_path)
