@@ -40,12 +40,15 @@ async def get_exchange_rate_to_usd(currency: str) -> Decimal:
         return _exchange_rate_cache[currency]
     
     try:
-        # Use exchangerate-api.com (free tier: 1500 requests/month)
-        # Alternative: can use fixer.io, currencyapi.net, or other free APIs
+        # Use exchangerate-api.com v6 API (supports API key for higher limits)
         async with httpx.AsyncClient(timeout=10.0) as client:
-            # Using exchangerate-api.com free endpoint
-            # Note: For production, you might want to add EXCHANGE_RATE_API_KEY to settings
-            url = f"https://api.exchangerate-api.com/v4/latest/{currency}"
+            if settings.EXCHANGE_RATE_API_KEY:
+                # Use v6 API with API key (higher rate limits)
+                url = f"https://v6.exchangerate-api.com/v6/{settings.EXCHANGE_RATE_API_KEY}/latest/{currency}"
+            else:
+                # Fallback to v4 free endpoint (no key required, but limited)
+                url = f"https://api.exchangerate-api.com/v4/latest/{currency}"
+            
             response = await client.get(url)
             
             if response.status_code == 200:

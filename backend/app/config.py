@@ -17,6 +17,9 @@ class Settings:
     # OpenAI
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     
+    # Exchange Rate API (for currency conversion)
+    EXCHANGE_RATE_API_KEY: str = os.getenv("EXCHANGE_RATE_API_KEY", "")
+    
     # Cloudinary
     # Support both CLOUDINARY_URL (cloudinary://api_key:api_secret@cloud_name) 
     # and individual variables for flexibility
